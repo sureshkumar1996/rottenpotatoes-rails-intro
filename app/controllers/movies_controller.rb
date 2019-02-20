@@ -11,8 +11,22 @@ class MoviesController < ApplicationController
   end
 
   def index
-    @movies = Movie.all
+    sort = params[:sorting]
+    @title_color = NIL
+    @release_data_color = NIL
+    
+    case sort
+    when 'title'
+      @movies = Movie.order(:title)
+      @title_color = 'Yellow'
+    when 'release_date'
+      @movies = Movie.order(:release_date)
+      @release_data_color = 'Yellow'
+    else
+      @movies = Movie.all
+    end
   end
+  
 
   def new
     # default: render 'new' template
