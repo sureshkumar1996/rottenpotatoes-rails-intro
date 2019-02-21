@@ -15,6 +15,8 @@ class MoviesController < ApplicationController
     @title_color = NIL
     @release_data_color = NIL
     
+    @movies = Movie.all
+    
     case sort
     when 'title'
       @movies = Movie.order(:title)
@@ -25,6 +27,26 @@ class MoviesController < ApplicationController
     else
       @movies = Movie.all
     end
+    
+    def not_null parameter
+      return (not parameter.empty?)
+    end
+    
+    #@movies = Movie.all
+    @all_ratings = Movie.all_ratings
+    @filter_ratings = []
+    
+    unless params[:ratings].nil?
+      @filter_ratings = params[:ratings].keys
+      if not_null(params[:ratings].keys)
+        #@movies = Movie.all.select{ |movie| @all_ratings.include? params[:ratings].keys }
+        #@movies = Movie.none
+        @movies = Movie.all.where({rating: @filter_ratings})
+      else
+        @movies = Movie.all 
+      end
+    end
+    
   end
   
 
