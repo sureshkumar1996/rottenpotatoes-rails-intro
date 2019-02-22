@@ -11,40 +11,44 @@ class MoviesController < ApplicationController
   end
 
   def index
+    yellowHilite   = "hilite"
+    @movies         = Movie.all
+    @all_ratings    = Movie.all_ratings
+    
+    if session[:title] == yellowHilite  && params[:sorting] == nil 
+      params[:sorting] = "title"
+    end
+    
+    if session[:release] == yellowHilite && params[:sorting] == nil
+      params[:sorting] = "release_date"
+    end
+    
+    if params[:ratings] == nil && session[:checked] != nil
+      params[:ratings] = session[:checked]
+      redirect_to movies_path(params)
+    end
+    
     sort = params[:sorting]
-    @title_color = NIL
-    @release_data_color = NIL
-    
-    @movies = Movie.all
-    
     case sort
     when 'title'
       @movies = Movie.order(:title)
-      @title_color = 'Yellow'
-    when 'release_date'
+ 	    session[:title] = yellowHilite
+ 	    session[:release] = nil
+ 	  when 'release_date'
       @movies = Movie.order(:release_date)
-      @release_data_color = 'Yellow'
-    else
-      @movies = Movie.all
+      session[:release] = yellowHilite
+      session[:title] = nil
     end
-    
-    def not_null parameter
-      return (not parameter.empty?)
-    end
-    
-    #@movies = Movie.all
-    @all_ratings = Movie.all_ratings
-    @filter_ratings = []
     
     unless params[:ratings].nil?
-      @filter_ratings = params[:ratings].keys
-      if not_null(params[:ratings].keys)
-        #@movies = Movie.all.select{ |movie| @all_ratings.include? params[:ratings].keys }
-        #@movies = Movie.none
-        @movies = Movie.all.where({rating: @filter_ratings})
-      else
-        @movies = Movie.all 
+      session[:checked]=params[:ratings]
+      if session[:checked] == nil
+       session[:checked] = Hash.new()
+       @all_ratings.each do (each_rating)
+        session[:checked][each_rating]=1
+       end
       end
+      @movies = @movies.where({rating: session[:checked].keys})
     end
     
   end
