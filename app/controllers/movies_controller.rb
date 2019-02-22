@@ -15,6 +15,11 @@ class MoviesController < ApplicationController
     @movies         = Movie.all
     @all_ratings    = Movie.all_ratings
     
+    if params[:ratings] == nil && session[:checked] != nil
+      params[:ratings] = session[:checked]
+      redirect_to movies_path(params)
+    end
+    
     if session[:title] == yellowHilite  && params[:sorting] == nil 
       params[:sorting] = "title"
     end
@@ -23,11 +28,7 @@ class MoviesController < ApplicationController
       params[:sorting] = "release_date"
     end
     
-    if params[:ratings] == nil && session[:checked] != nil
-      params[:ratings] = session[:checked]
-      redirect_to movies_path(params)
-    end
-    
+    #Sorting the movies
     sort = params[:sorting]
     case sort
     when 'title'
@@ -40,14 +41,19 @@ class MoviesController < ApplicationController
       session[:title] = nil
     end
     
+    #Filtering the movies
     unless params[:ratings].nil?
-      session[:checked]=params[:ratings]
+      session[:checked] = params[:ratings]
+      
+      #Initializing the hash at beginning
       if session[:checked] == nil
        session[:checked] = Hash.new()
        @all_ratings.each do (each_rating)
-        session[:checked][each_rating]=1
+        session[:checked][each_rating] = true
        end
       end
+      
+      #Selecting the filtered movies
       @movies = @movies.where({rating: session[:checked].keys})
     end
     
