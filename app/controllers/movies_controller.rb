@@ -1,7 +1,7 @@
 class MoviesController < ApplicationController
-
+  
   def movie_params
-    params.require(:movie).permit(:title, :rating, :description, :release_date)
+    params.require(:movie).permit(:title, :rating, :description, :release_date, :director)
   end
 
   def show
@@ -11,55 +11,28 @@ class MoviesController < ApplicationController
   end
 
   def index
-    yellowHilite   = "hilite"
-    @movies         = Movie.all
-    @all_ratings    = Movie.all_ratings
-    
-    if params[:ratings] == nil && session[:checked] != nil
-      params[:ratings] = session[:checked]
-      redirect_to movies_path(params)
-    end
-    
-    if session[:title] == yellowHilite  && params[:sorting] == nil 
-      params[:sorting] = "title"
-    end
-    
-    if session[:release] == yellowHilite && params[:sorting] == nil
-      params[:sorting] = "release_date"
-    end
-    
-    #Sorting the movies
-    sort = params[:sorting]
+    sort = params[:sort] || session[:sort]
     case sort
     when 'title'
-      @movies = Movie.order(:title)
- 	    session[:title] = yellowHilite
- 	    session[:release] = nil
- 	  when 'release_date'
-      @movies = Movie.order(:release_date)
-      session[:release] = yellowHilite
-      session[:title] = nil
+      ordering,@title_header = {:title => :asc}, 'hilite'
+    when 'release_date'
+      ordering,@date_header = {:release_date => :asc}, 'hilite'
+    end
+    @all_ratings = Movie.all_ratings
+    @selected_ratings = params[:ratings] || session[:ratings] || {}
+    
+    if @selected_ratings == {}
+      @selected_ratings = Hash[@all_ratings.map {|rating| [rating, rating]}]
     end
     
-    #Filtering the movies
-    unless params[:ratings].nil?
-      session[:checked] = params[:ratings]
-      
-      #Initializing the hash at beginning
-      if session[:checked] == nil
-       session[:checked] = Hash.new()
-       @all_ratings.each do (each_rating)
-        session[:checked][each_rating] = true
-       end
-      end
-      
-      #Selecting the filtered movies
-      @movies = @movies.where({rating: session[:checked].keys})
+    if params[:sort] != session[:sort] or params[:ratings] != session[:ratings]
+      session[:sort] = sort
+      session[:ratings] = @selected_ratings
+      redirect_to :sort => sort, :ratings => @selected_ratings and return
     end
-    
+    @movies = Movie.where(rating: @selected_ratings.keys).order(ordering)
   end
   
-
   def new
     # default: render 'new' template
   end
@@ -74,6 +47,17 @@ class MoviesController < ApplicationController
     @movie = Movie.find params[:id]
   end
 
+  def same_director
+    @movie = Movie.find(params[:id])
+    movie_with_director = @movie.director
+    if movie_with_director.blank? then
+      flash[:notice] = "'#{@movie.title}' has no director information."
+      redirect_to movies_path
+    else
+      @movies=Movie.where(Director: movie_with_director)
+    end
+  end
+  
   def update
     @movie = Movie.find params[:id]
     @movie.update_attributes!(movie_params)
